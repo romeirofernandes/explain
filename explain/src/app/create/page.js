@@ -457,7 +457,7 @@ export default function CreateGamePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.0 }}
           >
-            You'll be the host and can start the game once other players join
+            You&apos;tll be the host and can start the game once other players join
             using your game code.
           </motion.p>
         </motion.div>

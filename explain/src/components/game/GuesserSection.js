@@ -46,7 +46,7 @@ export const GuesserSection = ({
               animate={{ opacity: 1 }}
               key={currentClue}
             >
-              "{currentClue}"
+              &ldquo;{currentClue}&rdquo;
             </motion.p>
           ) : (
             <p className="text-neutral-400 text-center italic">
@@ -118,8 +118,10 @@ export const GuesserSection = ({
               animate={{ opacity: 1, y: 0 }}
               key={lastResult.timestamp}
             >
-              "{lastResult.guess}" -{" "}
-              {lastResult.isCorrect ? "Correct!" : "Try again!"}
+              <div className="text-xs opacity-75">
+                &ldquo;{lastResult.guess}&rdquo; -{" "}
+                {lastResult.isCorrect ? "Correct!" : "Try again!"}
+              </div>
             </motion.div>
           )}
 

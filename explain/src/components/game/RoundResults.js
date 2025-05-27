@@ -53,7 +53,7 @@ export const RoundResults = ({
               transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
             >
               <p className="text-xl md:text-2xl text-[#03624c] font-semibold mb-2">
-                Word: "{roundResults.word}"
+                Word: &ldquo;{roundResults.word}&rdquo;
               </p>
               <p className="text-neutral-400">
                 Explained by{" "}

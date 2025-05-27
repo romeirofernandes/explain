@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 
 export const ExplainerSection = ({
@@ -21,23 +21,23 @@ export const ExplainerSection = ({
     setError("");
   };
 
-  const handleClueUpdate = async () => {
+  const handleClueUpdate = useCallback(async () => {
     const result = await onUpdateClue(localClue);
     if (!result.success) {
       setError(result.error);
     }
-  };
+  }, [localClue, onUpdateClue]);
 
   // Auto-save clue after user stops typing
   useEffect(() => {
     if (localClue === currentClue) return;
-
+    
     const timer = setTimeout(() => {
       handleClueUpdate();
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [localClue, currentClue]);
+  }, [localClue, currentClue, handleClueUpdate]);
 
   return (
     <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-800 rounded-2xl p-6 h-full">
@@ -54,7 +54,7 @@ export const ExplainerSection = ({
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-white">Give a clue:</h3>
-
+        
         <div>
           <textarea
             value={localClue}
@@ -63,7 +63,7 @@ export const ExplainerSection = ({
             className="w-full h-32 p-4 rounded-xl bg-neutral-800/50 border border-neutral-700 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#03624c] focus:border-transparent resize-none"
             disabled={!roundStarted}
           />
-
+          
           {error && (
             <motion.p
               className="text-red-400 text-sm mt-2"
@@ -76,7 +76,7 @@ export const ExplainerSection = ({
         </div>
 
         <div className="text-neutral-400 text-sm space-y-1">
-          <p>• Don't use the word itself or its letters</p>
+          <p>• Don&apos;t use the word itself</p>
           <p>• Be creative with your descriptions</p>
           <p>• You can edit your clue anytime during the round</p>
           <p>• Changes are saved automatically</p>
@@ -85,7 +85,7 @@ export const ExplainerSection = ({
         {currentClue && (
           <div className="mt-6 p-4 bg-[#03624c]/10 border border-[#03624c]/20 rounded-xl">
             <h4 className="text-white font-medium mb-2">Players see:</h4>
-            <p className="text-white italic">"{currentClue}"</p>
+            <p className="text-white italic">&ldquo;{currentClue}&rdquo;</p>
           </div>
         )}
       </div>

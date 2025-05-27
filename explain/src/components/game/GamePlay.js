@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -32,141 +32,7 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
   );
   const hasGuessedCorrectly = !!playerGuess;
 
-  // Sync timer with actual round time
-  useEffect(() => {
-    if (
-      gameData.currentRound.status === "active" &&
-      gameData.currentRound.startTime
-    ) {
-      const startTime = new Date(gameData.currentRound.startTime).getTime();
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
-      const remaining = Math.max(gameData.settings.roundTime - elapsed, 0);
-
-      setTimeLeft(remaining);
-      setRoundStarted(true);
-      setCurrentWord(gameData.currentRound.word || "");
-
-      if (remaining <= 0) {
-        endRound();
-      }
-    }
-  }, [gameData.currentRound]);
-
-  // Start round if explainer and round is waiting
-  useEffect(() => {
-    if (gameData.currentRound.status === "waiting" && isExplainer) {
-      startRound();
-    }
-  }, [gameData.currentRound.status, isExplainer]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (!roundStarted || timeLeft <= 0 || showResults) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          endRound();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [roundStarted, timeLeft, showResults]);
-
-  const startRound = async () => {
-    const word = getRandomWordByDifficulty(gameData.settings.difficulty);
-    setCurrentWord(word);
-    setRoundStarted(true);
-
-    try {
-      const gameRef = doc(db, "games", gameCode);
-      await updateDoc(gameRef, {
-        "currentRound.word": word,
-        "currentRound.status": "active",
-        "currentRound.clue": "", // Single editable clue
-        "currentRound.startTime": new Date().toISOString(),
-        "currentRound.endTime": new Date(
-          Date.now() + gameData.settings.roundTime * 1000
-        ).toISOString(),
-        lastActivity: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error("Error starting round:", error);
-    }
-  };
-
-  const updateClue = async (newClue) => {
-    if (!isExplainer) return;
-
-    // Validate clue doesn't contain the word
-    if (newClue.trim() && !isValidExplanation(newClue, currentWord)) {
-      return {
-        success: false,
-        error:
-          "Your clue contains the word or its letters! Try a different approach.",
-      };
-    }
-
-    try {
-      const gameRef = doc(db, "games", gameCode);
-      await updateDoc(gameRef, {
-        "currentRound.clue": newClue.trim(),
-        lastActivity: new Date().toISOString(),
-      });
-      return { success: true };
-    } catch (error) {
-      console.error("Error updating clue:", error);
-      return { success: false, error: "Failed to update clue" };
-    }
-  };
-
-  const submitGuess = async (guess) => {
-    if (!guess.trim() || !roundStarted || isExplainer || hasGuessedCorrectly)
-      return;
-
-    const isCorrect = isCorrectGuess(guess, currentWord);
-
-    // Count existing correct guesses to determine order
-    const existingCorrectGuesses = (gameData.currentRound.guesses || []).filter(
-      (g) => g.isCorrect
-    );
-
-    const guessData = {
-      playerId: currentPlayer.id,
-      playerName: currentPlayer.name,
-      guess: guess.trim(),
-      isCorrect,
-      timestamp: new Date().toISOString(),
-      order: isCorrect ? existingCorrectGuesses.length + 1 : 0,
-      timeRemaining: timeLeft,
-    };
-
-    try {
-      const gameRef = doc(db, "games", gameCode);
-
-      // Add the guess to the array
-      const updatedGuesses = [
-        ...(gameData.currentRound.guesses || []),
-        guessData,
-      ];
-
-      await updateDoc(gameRef, {
-        "currentRound.guesses": updatedGuesses,
-        lastActivity: new Date().toISOString(),
-      });
-
-      return { success: true, isCorrect };
-    } catch (error) {
-      console.error("Error submitting guess:", error);
-      return { success: false, error: "Failed to submit guess" };
-    }
-  };
-
-  const endRound = async () => {
+  const endRound = useCallback(async () => {
     if (showResults) return;
 
     setShowResults(true);
@@ -259,6 +125,140 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
       }
     } catch (error) {
       console.error("Error ending round:", error);
+    }
+  }, [showResults, gameData, currentWord, explainer, gameCode]);
+
+  const startRound = useCallback(async () => {
+    const word = getRandomWordByDifficulty(gameData.settings.difficulty);
+    setCurrentWord(word);
+    setRoundStarted(true);
+
+    try {
+      const gameRef = doc(db, "games", gameCode);
+      await updateDoc(gameRef, {
+        "currentRound.word": word,
+        "currentRound.status": "active",
+        "currentRound.clue": "", // Single editable clue
+        "currentRound.startTime": new Date().toISOString(),
+        "currentRound.endTime": new Date(
+          Date.now() + gameData.settings.roundTime * 1000
+        ).toISOString(),
+        lastActivity: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error starting round:", error);
+    }
+  }, [gameData.settings.roundTime, gameCode]);
+
+  // Sync timer with actual round time
+  useEffect(() => {
+    if (
+      gameData.currentRound.status === "active" &&
+      gameData.currentRound.startTime
+    ) {
+      const startTime = new Date(gameData.currentRound.startTime).getTime();
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(gameData.settings.roundTime - elapsed, 0);
+
+      setTimeLeft(remaining);
+      setRoundStarted(true);
+      setCurrentWord(gameData.currentRound.word || "");
+
+      if (remaining <= 0) {
+        endRound();
+      }
+    }
+  }, [gameData.currentRound, gameData.settings.roundTime, endRound]);
+
+  // Start round if explainer and round is waiting
+  useEffect(() => {
+    if (gameData.currentRound.status === "waiting" && isExplainer) {
+      startRound();
+    }
+  }, [gameData.currentRound.status, isExplainer, startRound]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (!roundStarted || timeLeft <= 0 || showResults) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          endRound();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [roundStarted, timeLeft, showResults, endRound]);
+
+  const updateClue = async (newClue) => {
+    if (!isExplainer) return;
+
+    // Validate clue doesn't contain the word
+    if (newClue.trim() && !isValidExplanation(newClue, currentWord)) {
+      return {
+        success: false,
+        error:
+          "Your clue contains the word or its letters! Try a different approach.",
+      };
+    }
+
+    try {
+      const gameRef = doc(db, "games", gameCode);
+      await updateDoc(gameRef, {
+        "currentRound.clue": newClue.trim(),
+        lastActivity: new Date().toISOString(),
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating clue:", error);
+      return { success: false, error: "Failed to update clue" };
+    }
+  };
+
+  const submitGuess = async (guess) => {
+    if (!guess.trim() || !roundStarted || isExplainer || hasGuessedCorrectly)
+      return;
+
+    const isCorrect = isCorrectGuess(guess, currentWord);
+
+    // Count existing correct guesses to determine order
+    const existingCorrectGuesses = (gameData.currentRound.guesses || []).filter(
+      (g) => g.isCorrect
+    );
+
+    const guessData = {
+      playerId: currentPlayer.id,
+      playerName: currentPlayer.name,
+      guess: guess.trim(),
+      isCorrect,
+      timestamp: new Date().toISOString(),
+      order: isCorrect ? existingCorrectGuesses.length + 1 : 0,
+      timeRemaining: timeLeft,
+    };
+
+    try {
+      const gameRef = doc(db, "games", gameCode);
+
+      // Add the guess to the array
+      const updatedGuesses = [
+        ...(gameData.currentRound.guesses || []),
+        guessData,
+      ];
+
+      await updateDoc(gameRef, {
+        "currentRound.guesses": updatedGuesses,
+        lastActivity: new Date().toISOString(),
+      });
+
+      return { success: true, isCorrect };
+    } catch (error) {
+      console.error("Error submitting guess:", error);
+      return { success: false, error: "Failed to submit guess" };
     }
   };
 
