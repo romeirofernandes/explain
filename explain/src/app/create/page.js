@@ -153,7 +153,7 @@ export default function CreateGamePage() {
                 placeholder="Enter your name"
                 maxLength={20}
                 className="w-full h-11 sm:h-12 px-3 sm:px-4 rounded-lg sm:rounded-xl bg-neutral-800/50 border border-neutral-700 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#03624c] focus:border-transparent transition-all duration-200"
-                whileFocus={{ scale: 1.01 }}
+                whilefocus={{ scale: 1.01 }}
                 transition={{ duration: 0.1 }}
               />
             </motion.div>
@@ -178,7 +178,7 @@ export default function CreateGamePage() {
                     value={maxPlayers}
                     onChange={(e) => setMaxPlayers(Number(e.target.value))}
                     className="w-full h-11 sm:h-12 px-3 sm:px-4 rounded-lg sm:rounded-xl bg-neutral-800/50 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-[#03624c] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
-                    whileFocus={{ scale: 1.02 }}
+                    whilefocus={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
                     <option value={4} className="bg-neutral-800 text-white">
@@ -230,7 +230,7 @@ export default function CreateGamePage() {
                     value={roundTime}
                     onChange={(e) => setRoundTime(Number(e.target.value))}
                     className="w-full h-11 sm:h-12 px-3 sm:px-4 rounded-lg sm:rounded-xl bg-neutral-800/50 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-[#03624c] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
-                    whileFocus={{ scale: 1.02 }}
+                    whilefocus={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
                     <option value={30} className="bg-neutral-800 text-white">
@@ -282,7 +282,7 @@ export default function CreateGamePage() {
                     value={totalRounds}
                     onChange={(e) => setTotalRounds(Number(e.target.value))}
                     className="w-full h-11 sm:h-12 px-3 sm:px-4 rounded-lg sm:rounded-xl bg-neutral-800/50 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-[#03624c] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
-                    whileFocus={{ scale: 1.02 }}
+                    whilefocus={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
                     <option value={3} className="bg-neutral-800 text-white">
@@ -334,7 +334,7 @@ export default function CreateGamePage() {
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value)}
                     className="w-full h-11 sm:h-12 px-3 sm:px-4 rounded-lg sm:rounded-xl bg-neutral-800/50 border border-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-[#03624c] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
-                    whileFocus={{ scale: 1.02 }}
+                    whilefocus={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
                     <option value="easy" className="bg-neutral-800 text-white">
