@@ -28,7 +28,10 @@ export function generateRoomCode() {
 
 export function getRandomLettersForHint(word, alreadyRevealed = [], count = 1) {
   const availableLetters = [...new Set(word.toLowerCase().split(""))].filter(
-    (letter) => !alreadyRevealed.includes(letter) && letter !== " "
+    (letter) =>
+      !alreadyRevealed.includes(letter) &&
+      letter !== " " &&
+      letter.match(/[a-z]/)
   );
 
   const shuffled = availableLetters.sort(() => Math.random() - 0.5);
@@ -55,19 +58,23 @@ export function isValidExplanation(explanation, targetWord) {
     return false;
   }
 
-  const spacelessExplanation = explanation.toLowerCase().replace(/[\s\-_.,!?;:]/g, "");
-  const spacelessTargetWord = targetWord.toLowerCase().replace(/[\s\-_.,!?;:]/g, "");
-  
+  const spacelessExplanation = explanation
+    .toLowerCase()
+    .replace(/[\s\-_.,!?;:]/g, "");
+  const spacelessTargetWord = targetWord
+    .toLowerCase()
+    .replace(/[\s\-_.,!?;:]/g, "");
+
   if (spacelessExplanation.includes(spacelessTargetWord)) {
     return false;
   }
-  const letterPattern = cleanTargetWord.split('').join('[^a-z]*');
-  const regex = new RegExp(letterPattern, 'i');
-  
+  const letterPattern = cleanTargetWord.split("").join("[^a-z]*");
+  const regex = new RegExp(letterPattern, "i");
+
   if (regex.test(explanation)) {
     return false;
   }
-  
+
   return true;
 }
 

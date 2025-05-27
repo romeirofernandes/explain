@@ -24,12 +24,15 @@ export const GameTimer = ({
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold text-white">
-              Round {currentRound.number} of {totalRounds}
+              Round {currentRound.displayRound} of {totalRounds}
             </h1>
             <p className="text-neutral-400">
               {isExplainer
                 ? "You are explaining"
                 : `${explainerName} is explaining`}
+              <span className="text-[#03624c] ml-2">
+                (Turn {currentRound.turnInRound})
+              </span>
             </p>
           </div>
           <div className="text-right">

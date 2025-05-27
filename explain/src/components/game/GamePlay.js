@@ -3,7 +3,11 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { isCorrectGuess, isValidExplanation } from "@/utils/gameLogic";
+import {
+  isCorrectGuess,
+  isValidExplanation,
+  getRandomLettersForHint,
+} from "@/utils/gameLogic";
 import { getRandomWordByDifficulty } from "@/constants/words";
 import { GameTimer } from "./GameTimer";
 import { ExplainerSection } from "./ExplainerSection";
@@ -28,11 +32,20 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
   );
   const isExplainer = currentPlayer?.id === gameData.currentRound.explainerId;
 
-  // Check if player has already guessed correctly this round
   const playerGuess = gameData.currentRound.guesses?.find(
     (g) => g.playerId === currentPlayer?.id && g.isCorrect
   );
   const hasGuessedCorrectly = !!playerGuess;
+
+  // Check if all non-explainer players have guessed correctly
+  const nonExplainerPlayers = gameData.players.filter(
+    (p) => p.id !== gameData.currentRound.explainerId
+  );
+  const correctGuesses =
+    gameData.currentRound.guesses?.filter((g) => g.isCorrect) || [];
+  const allPlayersGuessed =
+    nonExplainerPlayers.length > 0 &&
+    correctGuesses.length >= nonExplainerPlayers.length;
 
   const endRound = useCallback(async () => {
     if (showResults) return;
@@ -41,15 +54,10 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     setRoundStarted(false);
 
     try {
-      // Calculate scores
       const correctGuesses =
         gameData.currentRound.guesses?.filter((g) => g.isCorrect) || [];
-      const nonExplainerPlayers = gameData.players.filter(
-        (p) => p.id !== gameData.currentRound.explainerId
-      );
       const explainerPoints = correctGuesses.length * 30;
 
-      // Update player scores
       const updatedPlayers = gameData.players.map((player) => {
         if (player.id === gameData.currentRound.explainerId) {
           return { ...player, score: player.score + explainerPoints };
@@ -69,7 +77,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
         return player;
       });
 
-      // Prepare round results
       const results = {
         word: currentWord,
         explainer: explainer.name,
@@ -88,9 +95,12 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
 
       setRoundResults(results);
 
-      // Check if game is finished
-      const isGameFinished =
-        gameData.currentRound.number >= gameData.settings.totalRounds;
+      // Calculate current turn and round
+      const currentTurn = gameData.currentRound.number;
+      const totalPlayers = gameData.players.length;
+      const totalTurns = gameData.settings.totalRounds * totalPlayers;
+
+      const isGameFinished = currentTurn >= totalTurns;
 
       if (isGameFinished) {
         const gameRef = doc(db, "games", gameCode);
@@ -101,17 +111,16 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
           lastActivity: new Date().toISOString(),
         });
       } else {
-        // Wait 5 seconds then move to next round
         setTimeout(async () => {
           const nextExplainerId = getNextExplainer(
             updatedPlayers,
-            gameData.currentRound.number + 1
+            currentTurn + 1
           );
 
           const gameRef = doc(db, "games", gameCode);
           await updateDoc(gameRef, {
             players: updatedPlayers,
-            "currentRound.number": gameData.currentRound.number + 1,
+            "currentRound.number": currentTurn + 1,
             "currentRound.explainerId": nextExplainerId,
             "currentRound.word": null,
             "currentRound.clue": "",
@@ -128,7 +137,14 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     } catch (error) {
       console.error("Error ending round:", error);
     }
-  }, [showResults, gameData, currentWord, explainer, gameCode]);
+  }, [
+    showResults,
+    gameData,
+    currentWord,
+    explainer,
+    gameCode,
+    nonExplainerPlayers.length,
+  ]);
 
   const startRound = useCallback(async () => {
     const word = getRandomWordByDifficulty(gameData.settings.difficulty);
@@ -140,7 +156,7 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
       await updateDoc(gameRef, {
         "currentRound.word": word,
         "currentRound.status": "active",
-        "currentRound.clue": "", // Single editable clue
+        "currentRound.clue": "",
         "currentRound.startTime": new Date().toISOString(),
         "currentRound.endTime": new Date(
           Date.now() + gameData.settings.roundTime * 1000
@@ -150,7 +166,7 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     } catch (error) {
       console.error("Error starting round:", error);
     }
-  }, [gameData.settings.roundTime, gameCode]);
+  }, [gameData.settings.roundTime, gameData.settings.difficulty, gameCode]);
 
   // Sync timer with actual round time
   useEffect(() => {
@@ -173,7 +189,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     }
   }, [gameData.currentRound, gameData.settings.roundTime, endRound]);
 
-  // Start round if explainer and round is waiting
   useEffect(() => {
     if (gameData.currentRound.status === "waiting" && isExplainer) {
       startRound();
@@ -197,7 +212,14 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     return () => clearInterval(timer);
   }, [roundStarted, timeLeft, showResults, endRound]);
 
-  // Reveal letters at intervals (every 20 seconds, max 3 letters)
+  // Auto-end round when all players have guessed correctly
+  useEffect(() => {
+    if (allPlayersGuessed && roundStarted && !showResults) {
+      endRound();
+    }
+  }, [allPlayersGuessed, roundStarted, showResults, endRound]);
+
+  // Reveal letters at intervals
   useEffect(() => {
     if (!currentWord || !roundStarted) {
       setRevealedLetters([]);
@@ -205,7 +227,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
       return;
     }
 
-    // Initialize word display with dashes
     const initialDisplay = currentWord
       .split("")
       .map(() => "_")
@@ -218,7 +239,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
 
     revealIntervals.forEach((seconds, index) => {
       if (index < 3) {
-        // Max 3 letters
         const timer = setTimeout(() => {
           if (timeLeft > 0 && !showResults) {
             setRevealedLetters((prev) => {
@@ -226,7 +246,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
               if (newLetters.length > 0) {
                 const updated = [...prev, ...newLetters];
 
-                // Update word display
                 const newDisplay = currentWord
                   .split("")
                   .map((letter, idx) => {
@@ -257,7 +276,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
   const updateClue = async (newClue) => {
     if (!isExplainer) return;
 
-    // Validate clue doesn't contain the word
     if (newClue.trim() && !isValidExplanation(newClue, currentWord)) {
       return {
         success: false,
@@ -284,8 +302,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
       return;
 
     const isCorrect = isCorrectGuess(guess, currentWord);
-
-    // Count existing correct guesses to determine order
     const existingCorrectGuesses = (gameData.currentRound.guesses || []).filter(
       (g) => g.isCorrect
     );
@@ -302,8 +318,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
 
     try {
       const gameRef = doc(db, "games", gameCode);
-
-      // Add the guess to the array
       const updatedGuesses = [
         ...(gameData.currentRound.guesses || []),
         guessData,
@@ -321,31 +335,42 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     }
   };
 
-  const getNextExplainer = (players, roundNumber) => {
+  const getNextExplainer = (players, turnNumber) => {
     const availablePlayers = players.filter((p) => p.isConnected !== false);
-    const explainerIndex = (roundNumber - 1) % availablePlayers.length;
+    const explainerIndex = (turnNumber - 1) % availablePlayers.length;
     return availablePlayers[explainerIndex]?.id;
   };
 
-  // Results Modal
+  // Calculate current round and turn for display
+  const currentTurn = gameData.currentRound.number;
+  const totalPlayers = gameData.players.length;
+  const currentRoundNumber = Math.ceil(currentTurn / totalPlayers);
+  const totalTurns = gameData.settings.totalRounds * totalPlayers;
+
   if (showResults && roundResults) {
     return (
       <RoundResults
         roundResults={roundResults}
-        currentRound={gameData.currentRound}
+        currentRound={{
+          ...gameData.currentRound,
+          displayRound: currentRoundNumber,
+          turnInRound: ((currentTurn - 1) % totalPlayers) + 1,
+        }}
+        totalRounds={gameData.settings.totalRounds}
         playerName={playerName}
-        isGameFinished={
-          gameData.currentRound.number >= gameData.settings.totalRounds
-        }
+        isGameFinished={currentTurn >= totalTurns}
       />
     );
   }
 
-  // Waiting screen
   if (!roundStarted && gameData.currentRound.status === "waiting") {
     return (
       <WaitingScreen
-        currentRound={gameData.currentRound}
+        currentRound={{
+          ...gameData.currentRound,
+          displayRound: currentRoundNumber,
+          turnInRound: ((currentTurn - 1) % totalPlayers) + 1,
+        }}
         totalRounds={gameData.settings.totalRounds}
         isExplainer={isExplainer}
         explainerName={explainer?.name}
@@ -353,11 +378,14 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     );
   }
 
-  // Main game screen
   return (
     <div className="min-h-screen flex flex-col p-4 bg-neutral-950">
       <GameTimer
-        currentRound={gameData.currentRound}
+        currentRound={{
+          ...gameData.currentRound,
+          displayRound: currentRoundNumber,
+          turnInRound: ((currentTurn - 1) % totalPlayers) + 1,
+        }}
         totalRounds={gameData.settings.totalRounds}
         timeLeft={timeLeft}
         isExplainer={isExplainer}
@@ -365,7 +393,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
       />
 
       <div className="flex-1 w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Game Area */}
         <div className="lg:col-span-2">
           {isExplainer ? (
             <ExplainerSection
@@ -387,7 +414,6 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <LiveActivity
             guesses={gameData.currentRound.guesses || []}
