@@ -17,13 +17,13 @@ h6 {
 
 body {
   font-family: "Inter", sans-serif;
-  background-color: #121212; /* Tailwind's gray-100 */
-  color: #fefefe; /* Tailwind's gray-900 */
+  background-color: #080808; 
+  color: #fefefe; 
 }
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #03624c #121212;
+  scrollbar-color: #03624c #080808;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -31,7 +31,7 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #121212;
+  background: #080808;
   border-radius: 3px;
 }
 
