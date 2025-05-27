@@ -19,6 +19,8 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
   const [roundStarted, setRoundStarted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [roundResults, setRoundResults] = useState(null);
+  const [revealedLetters, setRevealedLetters] = useState([]);
+  const [wordDisplay, setWordDisplay] = useState("");
 
   const currentPlayer = gameData.players.find((p) => p.name === playerName);
   const explainer = gameData.players.find(
@@ -195,6 +197,63 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     return () => clearInterval(timer);
   }, [roundStarted, timeLeft, showResults, endRound]);
 
+  // Reveal letters at intervals (every 20 seconds, max 3 letters)
+  useEffect(() => {
+    if (!currentWord || !roundStarted) {
+      setRevealedLetters([]);
+      setWordDisplay("");
+      return;
+    }
+
+    // Initialize word display with dashes
+    const initialDisplay = currentWord
+      .split("")
+      .map(() => "_")
+      .join(" ");
+    setWordDisplay(initialDisplay);
+    setRevealedLetters([]);
+
+    const revealIntervals = [20, 40, 60]; // seconds
+    const timers = [];
+
+    revealIntervals.forEach((seconds, index) => {
+      if (index < 3) {
+        // Max 3 letters
+        const timer = setTimeout(() => {
+          if (timeLeft > 0 && !showResults) {
+            setRevealedLetters((prev) => {
+              const newLetters = getRandomLettersForHint(currentWord, prev, 1);
+              if (newLetters.length > 0) {
+                const updated = [...prev, ...newLetters];
+
+                // Update word display
+                const newDisplay = currentWord
+                  .split("")
+                  .map((letter, idx) => {
+                    if (updated.includes(letter.toLowerCase())) {
+                      return letter.toUpperCase();
+                    }
+                    return "_";
+                  })
+                  .join(" ");
+
+                setWordDisplay(newDisplay);
+                return updated;
+              }
+              return prev;
+            });
+          }
+        }, seconds * 1000);
+
+        timers.push(timer);
+      }
+    });
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [currentWord, roundStarted, timeLeft, showResults]);
+
   const updateClue = async (newClue) => {
     if (!isExplainer) return;
 
@@ -322,6 +381,8 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
               hasGuessedCorrectly={hasGuessedCorrectly}
               onSubmitGuess={submitGuess}
               roundStarted={roundStarted}
+              wordDisplay={wordDisplay}
+              wordLength={currentWord.length}
             />
           )}
         </div>

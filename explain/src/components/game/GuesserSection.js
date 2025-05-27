@@ -8,6 +8,8 @@ export const GuesserSection = ({
   hasGuessedCorrectly,
   onSubmitGuess,
   roundStarted,
+  wordDisplay,
+  wordLength,
 }) => {
   const [guess, setGuess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,12 +35,33 @@ export const GuesserSection = ({
 
   return (
     <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-800 rounded-2xl p-6 h-full">
+      {/* Word Hint Display */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-4">
-          Clue from {explainerName}:
+        <h2 className="text-xl font-bold text-white mb-4 text-center">
+          Word to Guess ({wordLength} letters)
         </h2>
 
-        <div className="min-h-32 p-4 bg-neutral-800/30 rounded-xl">
+        <motion.div
+          className="text-center mb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="text-3xl font-mono font-bold text-[#03624c] bg-neutral-800/50 rounded-xl p-4 tracking-wider">
+            {wordDisplay || "_ ".repeat(wordLength).trim()}
+          </div>
+          <p className="text-xs text-neutral-400 mt-2">
+            Letters will be revealed over time
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Clue Section */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-white mb-3">
+          Clue from {explainerName}:
+        </h3>
+
+        <div className="min-h-24 p-4 bg-neutral-800/30 rounded-xl">
           {currentClue ? (
             <motion.p
               className="text-white text-lg italic"
@@ -118,10 +141,8 @@ export const GuesserSection = ({
               animate={{ opacity: 1, y: 0 }}
               key={lastResult.timestamp}
             >
-              <div className="text-xs opacity-75">
-                &ldquo;{lastResult.guess}&rdquo; -{" "}
-                {lastResult.isCorrect ? "Correct!" : "Try again!"}
-              </div>
+              &ldquo;{lastResult.guess}&rdquo; -{" "}
+              {lastResult.isCorrect ? "Correct!" : "Try again!"}
             </motion.div>
           )}
 

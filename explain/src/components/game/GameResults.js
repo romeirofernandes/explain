@@ -1,11 +1,44 @@
 "use client";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export const GameResults = ({ gameData, playerName, isHost, gameCode }) => {
   const router = useRouter();
 
+  // Auto-delete game after 5 minutes
+  useEffect(() => {
+    const deleteTimer = setTimeout(async () => {
+      if (isHost) {
+        try {
+          const gameRef = doc(db, "games", gameCode);
+          await deleteDoc(gameRef);
+          console.log("Game deleted from Firestore");
+        } catch (error) {
+          console.error("Error deleting game:", error);
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearTimeout(deleteTimer);
+  }, [gameCode, isHost]);
+
   const sortedPlayers = [...gameData.players].sort((a, b) => b.score - a.score);
+
+  const handleBackHome = async () => {
+    // Immediate cleanup if host clicks back
+    if (isHost) {
+      try {
+        const gameRef = doc(db, "games", gameCode);
+        await deleteDoc(gameRef);
+      } catch (error) {
+        console.error("Error deleting game:", error);
+      }
+    }
+    router.push("/");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">
@@ -50,7 +83,7 @@ export const GameResults = ({ gameData, playerName, isHost, gameCode }) => {
           </div>
 
           <button
-            onClick={() => router.push("/")}
+            onClick={handleBackHome}
             className="w-full h-12 rounded-xl text-base font-medium text-white shadow-lg"
             style={{
               background: "linear-gradient(135deg, #03624c 0%, #06302b 100%)",
