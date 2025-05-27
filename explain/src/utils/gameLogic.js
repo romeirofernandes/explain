@@ -55,8 +55,20 @@ export function isValidExplanation(explanation, targetWord) {
     return false;
   }
 
-  const targetLetters = [...new Set(cleanTargetWord.split(""))];
-  return !targetLetters.some((letter) => cleanExplanation.includes(letter));
+  const spacelessExplanation = explanation.toLowerCase().replace(/[\s\-_.,!?;:]/g, "");
+  const spacelessTargetWord = targetWord.toLowerCase().replace(/[\s\-_.,!?;:]/g, "");
+  
+  if (spacelessExplanation.includes(spacelessTargetWord)) {
+    return false;
+  }
+  const letterPattern = cleanTargetWord.split('').join('[^a-z]*');
+  const regex = new RegExp(letterPattern, 'i');
+  
+  if (regex.test(explanation)) {
+    return false;
+  }
+  
+  return true;
 }
 
 export function formatTime(seconds) {

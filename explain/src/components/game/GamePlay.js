@@ -1,46 +1,344 @@
 "use client";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { isCorrectGuess, isValidExplanation } from "@/utils/gameLogic";
+import { getRandomWordByDifficulty } from "@/constants/words";
+import { GameTimer } from "./GameTimer";
+import { ExplainerSection } from "./ExplainerSection";
+import { GuesserSection } from "./GuesserSection";
+import { LiveActivity } from "./LiveActivity";
+import { GameScoreboard } from "./GameScoreboard";
+import { RoundResults } from "./RoundResults";
+import { WaitingScreen } from "./WaitingScreen";
 
 export const GamePlay = ({ gameData, playerName, gameCode }) => {
+  const [timeLeft, setTimeLeft] = useState(gameData.settings.roundTime);
+  const [currentWord, setCurrentWord] = useState("");
+  const [roundStarted, setRoundStarted] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [roundResults, setRoundResults] = useState(null);
+
   const currentPlayer = gameData.players.find((p) => p.name === playerName);
   const explainer = gameData.players.find(
     (p) => p.id === gameData.currentRound.explainerId
   );
   const isExplainer = currentPlayer?.id === gameData.currentRound.explainerId;
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">
-      <motion.div
-        className="w-full max-w-2xl text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <div className="bg-neutral-900/80 backdrop-blur-sm border border-neutral-800 rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-white mb-4">
-            Round {gameData.currentRound.number} of{" "}
-            {gameData.settings.totalRounds}
-          </h1>
+  // Check if player has already guessed correctly this round
+  const playerGuess = gameData.currentRound.guesses?.find(
+    (g) => g.playerId === currentPlayer?.id && g.isCorrect
+  );
+  const hasGuessedCorrectly = !!playerGuess;
 
+  // Sync timer with actual round time
+  useEffect(() => {
+    if (
+      gameData.currentRound.status === "active" &&
+      gameData.currentRound.startTime
+    ) {
+      const startTime = new Date(gameData.currentRound.startTime).getTime();
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(gameData.settings.roundTime - elapsed, 0);
+
+      setTimeLeft(remaining);
+      setRoundStarted(true);
+      setCurrentWord(gameData.currentRound.word || "");
+
+      if (remaining <= 0) {
+        endRound();
+      }
+    }
+  }, [gameData.currentRound]);
+
+  // Start round if explainer and round is waiting
+  useEffect(() => {
+    if (gameData.currentRound.status === "waiting" && isExplainer) {
+      startRound();
+    }
+  }, [gameData.currentRound.status, isExplainer]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (!roundStarted || timeLeft <= 0 || showResults) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          endRound();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [roundStarted, timeLeft, showResults]);
+
+  const startRound = async () => {
+    const word = getRandomWordByDifficulty(gameData.settings.difficulty);
+    setCurrentWord(word);
+    setRoundStarted(true);
+
+    try {
+      const gameRef = doc(db, "games", gameCode);
+      await updateDoc(gameRef, {
+        "currentRound.word": word,
+        "currentRound.status": "active",
+        "currentRound.clue": "", // Single editable clue
+        "currentRound.startTime": new Date().toISOString(),
+        "currentRound.endTime": new Date(
+          Date.now() + gameData.settings.roundTime * 1000
+        ).toISOString(),
+        lastActivity: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error starting round:", error);
+    }
+  };
+
+  const updateClue = async (newClue) => {
+    if (!isExplainer) return;
+
+    // Validate clue doesn't contain the word
+    if (newClue.trim() && !isValidExplanation(newClue, currentWord)) {
+      return {
+        success: false,
+        error:
+          "Your clue contains the word or its letters! Try a different approach.",
+      };
+    }
+
+    try {
+      const gameRef = doc(db, "games", gameCode);
+      await updateDoc(gameRef, {
+        "currentRound.clue": newClue.trim(),
+        lastActivity: new Date().toISOString(),
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating clue:", error);
+      return { success: false, error: "Failed to update clue" };
+    }
+  };
+
+  const submitGuess = async (guess) => {
+    if (!guess.trim() || !roundStarted || isExplainer || hasGuessedCorrectly)
+      return;
+
+    const isCorrect = isCorrectGuess(guess, currentWord);
+
+    // Count existing correct guesses to determine order
+    const existingCorrectGuesses = (gameData.currentRound.guesses || []).filter(
+      (g) => g.isCorrect
+    );
+
+    const guessData = {
+      playerId: currentPlayer.id,
+      playerName: currentPlayer.name,
+      guess: guess.trim(),
+      isCorrect,
+      timestamp: new Date().toISOString(),
+      order: isCorrect ? existingCorrectGuesses.length + 1 : 0,
+      timeRemaining: timeLeft,
+    };
+
+    try {
+      const gameRef = doc(db, "games", gameCode);
+
+      // Add the guess to the array
+      const updatedGuesses = [
+        ...(gameData.currentRound.guesses || []),
+        guessData,
+      ];
+
+      await updateDoc(gameRef, {
+        "currentRound.guesses": updatedGuesses,
+        lastActivity: new Date().toISOString(),
+      });
+
+      return { success: true, isCorrect };
+    } catch (error) {
+      console.error("Error submitting guess:", error);
+      return { success: false, error: "Failed to submit guess" };
+    }
+  };
+
+  const endRound = async () => {
+    if (showResults) return;
+
+    setShowResults(true);
+    setRoundStarted(false);
+
+    try {
+      // Calculate scores
+      const correctGuesses =
+        gameData.currentRound.guesses?.filter((g) => g.isCorrect) || [];
+      const nonExplainerPlayers = gameData.players.filter(
+        (p) => p.id !== gameData.currentRound.explainerId
+      );
+      const explainerPoints = correctGuesses.length * 30;
+
+      // Update player scores
+      const updatedPlayers = gameData.players.map((player) => {
+        if (player.id === gameData.currentRound.explainerId) {
+          return { ...player, score: player.score + explainerPoints };
+        }
+
+        const playerCorrectGuess = correctGuesses.find(
+          (g) => g.playerId === player.id
+        );
+        if (playerCorrectGuess) {
+          const guessPoints = Math.max(
+            100 - (playerCorrectGuess.order - 1) * 20,
+            10
+          );
+          return { ...player, score: player.score + guessPoints };
+        }
+
+        return player;
+      });
+
+      // Prepare round results
+      const results = {
+        word: currentWord,
+        explainer: explainer.name,
+        correctGuesses: correctGuesses.length,
+        totalPlayers: nonExplainerPlayers.length,
+        explainerPoints,
+        playerResults: updatedPlayers.map((p) => ({
+          name: p.name,
+          scoreGained:
+            p.score - gameData.players.find((gp) => gp.id === p.id).score,
+          totalScore: p.score,
+          wasExplainer: p.id === gameData.currentRound.explainerId,
+          guessedCorrectly: correctGuesses.some((g) => g.playerId === p.id),
+        })),
+      };
+
+      setRoundResults(results);
+
+      // Check if game is finished
+      const isGameFinished =
+        gameData.currentRound.number >= gameData.settings.totalRounds;
+
+      if (isGameFinished) {
+        const gameRef = doc(db, "games", gameCode);
+        await updateDoc(gameRef, {
+          players: updatedPlayers,
+          status: "finished",
+          "currentRound.status": "finished",
+          lastActivity: new Date().toISOString(),
+        });
+      } else {
+        // Wait 5 seconds then move to next round
+        setTimeout(async () => {
+          const nextExplainerId = getNextExplainer(
+            updatedPlayers,
+            gameData.currentRound.number + 1
+          );
+
+          const gameRef = doc(db, "games", gameCode);
+          await updateDoc(gameRef, {
+            players: updatedPlayers,
+            "currentRound.number": gameData.currentRound.number + 1,
+            "currentRound.explainerId": nextExplainerId,
+            "currentRound.word": null,
+            "currentRound.clue": "",
+            "currentRound.status": "waiting",
+            "currentRound.guesses": [],
+            "currentRound.startTime": null,
+            "currentRound.endTime": null,
+            lastActivity: new Date().toISOString(),
+          });
+          setShowResults(false);
+          setRoundResults(null);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Error ending round:", error);
+    }
+  };
+
+  const getNextExplainer = (players, roundNumber) => {
+    const availablePlayers = players.filter((p) => p.isConnected !== false);
+    const explainerIndex = (roundNumber - 1) % availablePlayers.length;
+    return availablePlayers[explainerIndex]?.id;
+  };
+
+  // Results Modal
+  if (showResults && roundResults) {
+    return (
+      <RoundResults
+        roundResults={roundResults}
+        currentRound={gameData.currentRound}
+        playerName={playerName}
+        isGameFinished={
+          gameData.currentRound.number >= gameData.settings.totalRounds
+        }
+      />
+    );
+  }
+
+  // Waiting screen
+  if (!roundStarted && gameData.currentRound.status === "waiting") {
+    return (
+      <WaitingScreen
+        currentRound={gameData.currentRound}
+        totalRounds={gameData.settings.totalRounds}
+        isExplainer={isExplainer}
+        explainerName={explainer?.name}
+      />
+    );
+  }
+
+  // Main game screen
+  return (
+    <div className="min-h-screen flex flex-col p-4 bg-neutral-950">
+      <GameTimer
+        currentRound={gameData.currentRound}
+        totalRounds={gameData.settings.totalRounds}
+        timeLeft={timeLeft}
+        isExplainer={isExplainer}
+        explainerName={explainer?.name}
+      />
+
+      <div className="flex-1 w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Game Area */}
+        <div className="lg:col-span-2">
           {isExplainer ? (
-            <div>
-              <p className="text-[#03624c] text-lg mb-4">You are explaining!</p>
-              <p className="text-white">
-                Game play logic will be implemented here
-              </p>
-            </div>
+            <ExplainerSection
+              currentWord={currentWord}
+              currentClue={gameData.currentRound.clue || ""}
+              onUpdateClue={updateClue}
+              roundStarted={roundStarted}
+            />
           ) : (
-            <div>
-              <p className="text-white mb-4">
-                <span className="text-[#03624c] font-semibold">
-                  {explainer?.name}
-                </span>{" "}
-                is explaining
-              </p>
-              <p className="text-neutral-400">Listen and guess the word!</p>
-            </div>
+            <GuesserSection
+              explainerName={explainer?.name}
+              currentClue={gameData.currentRound.clue || ""}
+              hasGuessedCorrectly={hasGuessedCorrectly}
+              onSubmitGuess={submitGuess}
+              roundStarted={roundStarted}
+            />
           )}
         </div>
-      </motion.div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <LiveActivity
+            guesses={gameData.currentRound.guesses || []}
+            hideGuessWords={true}
+          />
+          <GameScoreboard
+            players={gameData.players}
+            currentPlayerName={playerName}
+            currentExplainerId={gameData.currentRound.explainerId}
+          />
+        </div>
+      </div>
     </div>
   );
 };
