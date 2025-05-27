@@ -6,17 +6,15 @@ export const TextHoverEffect = ({ text, duration }) => {
   const svgRef = useRef(null);
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState(false);
-  const [maskPosition, setMaskPosition] = useState({ cx: "50%", cy: "50%" });
+  const [maskPosition, setMaskPosition] = useState({ cx: 300, cy: 70 }); // center in SVG units
 
   useEffect(() => {
     if (svgRef.current && cursor.x !== null && cursor.y !== null) {
       const svgRect = svgRef.current.getBoundingClientRect();
-      const cxPercentage = ((cursor.x - svgRect.left) / svgRect.width) * 100;
-      const cyPercentage = ((cursor.y - svgRect.top) / svgRect.height) * 100;
-      setMaskPosition({
-        cx: `${cxPercentage}%`,
-        cy: `${cyPercentage}%`,
-      });
+      // 600 = viewBox width, 140 = viewBox height
+      const cx = ((cursor.x - svgRect.left) / svgRect.width) * 600;
+      const cy = ((cursor.y - svgRect.top) / svgRect.height) * 140;
+      setMaskPosition({ cx, cy });
     }
   }, [cursor]);
 
@@ -25,7 +23,7 @@ export const TextHoverEffect = ({ text, duration }) => {
       ref={svgRef}
       width="100%"
       height="100%"
-      viewBox="0 0 300 140"
+      viewBox="0 0 600 140"
       xmlns="http://www.w3.org/2000/svg"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -41,17 +39,19 @@ export const TextHoverEffect = ({ text, duration }) => {
           x2="100%"
           y2="0%"
         >
-          <stop offset="0%" stopColor="#b2ffe7" stopOpacity="1" />
-          <stop offset="40%" stopColor="#36cfa0" stopOpacity="1" />
-          <stop offset="70%" stopColor="#2dd4bf" stopOpacity="1" />
-          <stop offset="100%" stopColor="#b2ffe7" stopOpacity="1" />
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="20%" stopColor="#b2ffe7" />
+          <stop offset="40%" stopColor="#36cfa0" />
+          <stop offset="60%" stopColor="#2dd4bf" />
+          <stop offset="80%" stopColor="#36cfa0" />
+          <stop offset="100%" stopColor="#fff" />
         </linearGradient>
         <motion.radialGradient
           id="revealMask"
           gradientUnits="userSpaceOnUse"
-          r="40"
-          initial={{ cx: "50%", cy: "50%" }}
-          animate={maskPosition}
+          r={90}
+          cx={maskPosition.cx}
+          cy={maskPosition.cy}
           transition={{ duration: duration ?? 0, ease: "easeOut" }}
         >
           <stop offset="0%" stopColor="white" />
@@ -94,7 +94,7 @@ export const TextHoverEffect = ({ text, duration }) => {
           textAnchor="middle"
           dominantBaseline="middle"
           stroke="url(#textGradient)"
-          strokeWidth="1.2"
+          strokeWidth="0.9"
           fill="transparent"
           mask="url(#textMask)"
           style={{

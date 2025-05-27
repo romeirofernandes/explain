@@ -18,15 +18,15 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-4xl w-full flex flex-col items-center">
         {/* Title with hover effect */}
-        <div className="h-60 w-full flex items-center justify-center mb-8">
+        <div className="h-40 w-full flex items-center justify-center mb-4 sm:mb-6">
           <TextHoverEffect text="EXPLAIN" />
         </div>
 
         {/* Buttons container */}
-        <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md">
+        <div className="flex flex-col gap-4 w-60 sm:w-full sm:px-52 sm:flex-row sm:gap-6">
           {/* Create Game Button */}
           <motion.button
-            className="flex-1 h-12 rounded-lg text-base font-medium text-white shadow-md"
+            className="flex-1 h-12 rounded-lg py-2 text-base font-medium text-white shadow-md"
             style={{
               background: "linear-gradient(135deg, #03624c 0%, #06302b 100%)",
               border: "1.5px solid rgba(254,254,254,0.08)",
@@ -45,7 +45,7 @@ export default function Home() {
 
           {/* Join Game Button */}
           <motion.button
-            className="flex-1 h-12 rounded-lg text-base font-medium text-white shadow-md"
+            className="flex-1 h-12 rounded-lg text-base py-2 font-medium text-white shadow-md"
             style={{
               background: "linear-gradient(135deg, #03624c 0%, #06302b 100%)",
               border: "1.5px solid rgba(254,254,254,0.08)",
