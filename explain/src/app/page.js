@@ -15,11 +15,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 pb-16">
       <div className="max-w-4xl w-full flex flex-col items-center">
         {/* Title with hover effect */}
         <div className="h-40 w-full flex items-center justify-center mb-4 sm:mb-6">
-          <TextHoverEffect text="EXPLAIN" />
+          <h1 className="block sm:hidden text-6xl font-bold bg-gradient-to-r from-[#03624c] to-[#fefefe] bg-clip-text text-transparent">
+            explain.
+          </h1>
+          <div className="hidden sm:block h-40 w-full items-center justify-center">
+            <TextHoverEffect text="EXPLAIN" />
+          </div>
         </div>
 
         {/* Buttons container */}
