@@ -219,59 +219,81 @@ export const GamePlay = ({ gameData, playerName, gameCode }) => {
     }
   }, [allPlayersGuessed, roundStarted, showResults, endRound]);
 
-  // Reveal letters at intervals
+  // Initialize word display when round starts
   useEffect(() => {
-    if (!currentWord || !roundStarted) {
+    if (!currentWord || !roundStarted || showResults) {
       setRevealedLetters([]);
       setWordDisplay("");
       return;
     }
 
-    const initialDisplay = currentWord
-      .split("")
-      .map(() => "_")
-      .join(" ");
-    setWordDisplay(initialDisplay);
-    setRevealedLetters([]);
+    // Only initialize if not already set
+    if (wordDisplay === "") {
+      const initialDisplay = currentWord
+        .split("")
+        .map(() => "_")
+        .join(" ");
+      setWordDisplay(initialDisplay);
+      setRevealedLetters([]);
+    }
+  }, [currentWord, roundStarted, showResults]);
 
-    const revealIntervals = [20, 40, 60]; // seconds
-    const timers = [];
+  // Reveal letters based on time
+  useEffect(() => {
+    if (!currentWord || !roundStarted || showResults || wordDisplay === "") {
+      return;
+    }
 
-    revealIntervals.forEach((seconds, index) => {
-      if (index < 3) {
-        const timer = setTimeout(() => {
-          if (timeLeft > 0 && !showResults) {
-            setRevealedLetters((prev) => {
-              const newLetters = getRandomLettersForHint(currentWord, prev, 1);
-              if (newLetters.length > 0) {
-                const updated = [...prev, ...newLetters];
+    // Determine how many letters should be revealed
+    let lettersToReveal = 0;
+    const halfTime = gameData.settings.roundTime / 2;
 
-                const newDisplay = currentWord
-                  .split("")
-                  .map((letter, idx) => {
-                    if (updated.includes(letter.toLowerCase())) {
-                      return letter.toUpperCase();
-                    }
-                    return "_";
-                  })
-                  .join(" ");
+    if (timeLeft <= halfTime && timeLeft > 10) {
+      lettersToReveal = 1;
+    } else if (timeLeft <= 10 && timeLeft > 5) {
+      lettersToReveal = 2;
+    } else if (timeLeft <= 5 && timeLeft > 0) {
+      lettersToReveal = 3;
+    }
 
-                setWordDisplay(newDisplay);
-                return updated;
+    // Only reveal if we need more letters
+    if (lettersToReveal > revealedLetters.length) {
+      setRevealedLetters((current) => {
+        const newLetters = getRandomLettersForHint(
+          currentWord,
+          current,
+          lettersToReveal - current.length
+        );
+
+        if (newLetters.length > 0) {
+          const updated = [...current, ...newLetters];
+
+          // Update display immediately
+          const newDisplay = currentWord
+            .split("")
+            .map((letter) => {
+              if (updated.includes(letter.toLowerCase())) {
+                return letter.toUpperCase();
               }
-              return prev;
-            });
-          }
-        }, seconds * 1000);
+              return "_";
+            })
+            .join(" ");
 
-        timers.push(timer);
-      }
-    });
+          setWordDisplay(newDisplay);
+          return updated;
+        }
 
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-    };
-  }, [currentWord, roundStarted, timeLeft, showResults]);
+        return current;
+      });
+    }
+  }, [
+    timeLeft,
+    currentWord,
+    roundStarted,
+    showResults,
+    wordDisplay,
+    gameData.settings.roundTime,
+  ]);
 
   const updateClue = async (newClue) => {
     if (!isExplainer) return;
