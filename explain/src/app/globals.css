@@ -1,26 +1,45 @@
 @import "tailwindcss";
+@import "@fontsource/inter";
+@import "@fontsource/dm-sans";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+button {
+  cursor: pointer;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "DM Sans", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", sans-serif;
+  background-color: #121212; /* Tailwind's gray-100 */
+  color: #fefefe; /* Tailwind's gray-900 */
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #03624c #121212;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #121212;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #03624c;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #06302b;
 }
