@@ -1,36 +1,167 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Explain
 
-## Getting Started
+<img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
+<img alt="Next.js" src="https://img.shields.io/badge/Next.js-15.x-black.svg">
+<img alt="React" src="https://img.shields.io/badge/React-19.x-blue.svg">
+<img alt="Firebase" src="https://img.shields.io/badge/Firebase-11.x-orange.svg">
+<img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-3.x-blue.svg">
+<img alt="Framer Motion" src="https://img.shields.io/badge/Framer--Motion-12.x-purple.svg">
 
-First, run the development server:
+A real-time, multiplayer word explanation and guessing game. Create a room, invite friends, and play together — powered by Firebase and Next.js.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## What is Explain?
+
+**Explain** is a multiplayer party game where one player explains a secret word and others try to guess it as quickly as possible. The platform features:
+
+- Game creation and joining with unique codes
+- Real-time gameplay using Firebase Firestore
+- Animated, responsive UI with Next.js, Tailwind CSS, and Framer Motion
+- Integrated feedback collection via Unified SDK
+
+---
+
+## Project Structure
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+explain/
+├── public/                  # Static assets
+├── src/
+│   ├── app/                 # Next.js app router pages (create, join, game, etc.)
+│   ├── components/          # Game UI components (lobby, timer, results, etc.)
+│   ├── constants/           # Game constants and word lists
+│   ├── lib/                 # Firebase config
+│   └── utils/               # Game logic helpers
+├── .env.local               # Environment variables
+├── package.json
+├── next.config.mjs
+└── README.md
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+````
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Create & Join Games**: Instantly start or join a game with a 6-character code
+- **Lobby System**: Wait for friends, see who's joined, and configure settings
+- **Custom Game Settings**: Choose round time, total rounds, difficulty, and max players
+- **Real-Time Gameplay**: All actions sync live via Firebase
+- **Explainer & Guesser Roles**: One player explains, others guess
+- **Scoreboard & Results**: Live leaderboard and animated round/game results
+- **Responsive & Animated UI**: Mobile-friendly, smooth transitions
+- **Feedback Widget**: Collect user feedback with Unified SDK
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Installation
 
-## Deploy on Vercel
+```bash
+git clone https://github.com/romeirofernandes/explain.git
+cd explain/explain
+pnpm install
+````
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Environment Variables
+
+Create a `.env.local` file in the project root with your Firebase configuration:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
+```
+
+---
+
+## Usage
+
+```bash
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
+pnpm start
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Game Flow
+
+1. **Home**: Choose to create or join a game.
+2. **Create Game**: Set your name and game settings, get a unique code.
+3. **Join Game**: Enter code and your name to join a friend's lobby.
+4. **Lobby**: Wait for all players, then start the game.
+5. **Gameplay**: One player explains, others guess the word.
+6. **Round Results**: See who scored; leaderboard updates.
+7. **Game Results**: Final scores and winner displayed.
+
+---
+
+## Tech Stack
+
+* **Frontend**: Next.js 15, React 19, Tailwind CSS, Framer Motion
+* **Backend**: Firebase Firestore (real-time database)
+* **Feedback**: Unified SDK
+* **Deployment**: Vercel (recommended)
+
+---
+
+## Key Components
+
+* **GameLobby**: Player list, settings, start game button
+* **GamePlay**: Explainer and guesser sections, timer, live activity
+* **RoundResults**: Animated round summary and leaderboard
+* **GameResults**: Final scores and winner
+* **UnifiedFeedback**: Feedback widget on home page
+
+---
+
+## Development Setup
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start dev server
+pnpm dev
+
+# Lint code
+pnpm lint
+
+# Build for production
+pnpm build
+```
+
+---
+
+## Browser Support
+
+* Chrome 90+
+* Firefox 88+
+* Safari 14+
+* Edge 90+
+
+---
+
+## Support
+
+* **Issues**: [GitHub Issues](https://github.com/romeirofernandes/explain/issues)
+* **Feedback**: Use the in-app feedback widget
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) file for details.
