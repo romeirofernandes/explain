@@ -1,11 +1,11 @@
 # Explain
 
-<img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
-<img alt="Next.js" src="https://img.shields.io/badge/Next.js-15.x-black.svg">
-<img alt="React" src="https://img.shields.io/badge/React-19.x-blue.svg">
-<img alt="Firebase" src="https://img.shields.io/badge/Firebase-11.x-orange.svg">
-<img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-3.x-blue.svg">
-<img alt="Framer Motion" src="https://img.shields.io/badge/Framer--Motion-12.x-purple.svg">
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-15.x-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.x-blue.svg)](https://reactjs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-11.x-orange.svg)](https://firebase.google.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-blue.svg)](https://tailwindcss.com/)
+[![Framer Motion](https://img.shields.io/badge/Framer--Motion-12.x-purple.svg)](https://www.framer.com/motion/)
 
 A real-time, multiplayer word explanation and guessing game. Create a room, invite friends, and play together — powered by Firebase and Next.js.
 
