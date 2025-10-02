@@ -13,7 +13,7 @@
     "@fontsource/inter": "^5.2.5",
     "firebase": "^11.8.1",
     "framer-motion": "^12.14.0",
-    "next": "15.3.2",
+    "next": "15.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "unified-sdk": "^2.1.2",
